@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mensagens Cognitivas</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .message { padding: 10px; border: 1px solid #ddd; margin-top: 10px; border-radius: 5px; }
+        .pending { background-color: #f9f9f9; }
+        .delivered { background-color: #e0ffe0; }
+        .error { background-color: #ffe0e0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Enviar Mensagem Cognitiva</h1>
+        <form id="messageForm">
+            <div>
+                <label for="destination">Destino:</label>
+                <input type="text" id="destination" name="destination" required>
+            </div>
+            <div>
+                <label for="content">Conteúdo:</label>
+                <textarea id="content" name="content" rows="4" required></textarea>
+            </div>
+            <div>
+                <label for="priority">Prioridade:</label>
+                <input type="number" id="priority" name="priority" value="1" min="1" max="5">
+            </div>
+            <button type="submit">Enviar</button>
+        </form>
+
+        <h2>Mensagens Ativas</h2>
+        <div id="activeMessages"></div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script>
+        const socket = io();
+
+        // Formulário de envio de mensagem
+        document.getElementById('messageForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const destination = document.getElementById('destination').value;
+            const content = document.getElementById('content').value;
+            const priority = parseInt(document.getElementById('priority').value);
+
+            const response = await fetch('/send_message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ destination, content, priority })
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+                alert('Mensagem enviada com sucesso!');
+            } else {
+                alert('Erro ao enviar mensagem: ' + result.error);
+            }
+
+            updateActiveMessages();
+        });
+
+        // Atualiza lista de mensagens ativas
+        async function updateActiveMessages() {
+            const response = await fetch('/active_messages');
+            const messages = await response.json();
+
+            const container = document.getElementById('activeMessages');
+            container.innerHTML = '';
+
+            Object.values(messages).forEach(message => {
+                const div = document.createElement('div');
+                div.className = 'message ' + (message.status || 'pending');
+                div.innerHTML = `
+                    <strong>ID:</strong> ${message.id}<br>
+                    <strong>Status:</strong> ${message.status}<br>
+                    <strong>Destino:</strong> ${message.path.slice(-1)[0]}<br>
+                    <strong>Prioridade:</strong> ${message.priority}<br>
+                    <strong>Tentativas:</strong> ${message.attempts}<br>
+                    <strong>Entregue:</strong> ${message.delivery_confirmed ? 'Sim' : 'Não'}<br>
+                    <strong>Clones:</strong> ${message.clone_count}
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // Atualiza lista periodicamente
+        setInterval(updateActiveMessages, 3000);
+
+        // WebSocket para atualizações em tempo real
+        socket.on('message_update', data => {
+            console.log('Atualização de mensagem:', data);
+            updateActiveMessages();
+        });
+
+        socket.on('message_delivered', data => {
+            console.log('Mensagem entregue:', data);
+            updateActiveMessages();
+        });
+
+        // Atualiza ao carregar a página
+        updateActiveMessages();
+    </script>
+</body>
+</html>
+
