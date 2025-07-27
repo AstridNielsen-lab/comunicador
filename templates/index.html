@@ -98,9 +98,15 @@
         <div id="activeMessages"></div>
     </div>
 
-    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <script>
-        const socket = io();
+
+        // Função para adicionar log
+        function addLog(message) {
+            const logContainer = document.getElementById('messageLogs');
+            const timestamp = new Date().toLocaleTimeString();
+            logContainer.textContent += `[${timestamp}] ${message}\n`;
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
 
         // Formulário de envio de mensagem
         document.getElementById('messageForm').addEventListener('submit', async (e) => {
@@ -109,6 +115,15 @@
             const content = document.getElementById('content').value;
             const priority = parseInt(document.getElementById('priority').value);
             const aiLevel = parseInt(document.getElementById('aiLevel').value);
+
+            // Limpa logs anteriores
+            document.getElementById('messageLogs').textContent = '';
+            
+            // Mostra progresso
+            addLog('🚀 Iniciando envio...');
+            addLog(`🎯 Destino: ${destination}`);
+            addLog(`🧠 IA Nível ${aiLevel} ativada!`);
+            addLog('🔍 Analisando melhor canal...');
 
             const response = await fetch('/send_message', {
                 method: 'POST',
@@ -119,9 +134,37 @@
             });
 
             const result = await response.json();
+            
             if (response.ok) {
-                alert('Mensagem enviada com sucesso!');
+                // Mostra pensamentos da IA
+                if (result.ai_thoughts) {
+                    result.ai_thoughts.forEach(thought => {
+                        addLog(`💭 ${thought}`);
+                    });
+                }
+                
+                // Mostra resultado
+                if (result.status === 'delivered') {
+                    addLog('✅ Email enviado com sucesso!');
+                    addLog(`📧 Canal: ${result.delivery_result.channel}`);
+                    addLog(`📍 Destino: ${result.delivery_result.destination}`);
+                    alert('✅ Mensagem enviada com sucesso!');
+                } else if (result.status === 'simulated') {
+                    addLog('📱 SMS simulado - email seria enviado');
+                    addLog('⚠️ Configure Twilio para SMS real');
+                    alert('✅ Simulação completa - configure Twilio para SMS real');
+                } else {
+                    addLog('❌ Falha na entrega');
+                    if (result.delivery_result && result.delivery_result.error) {
+                        addLog(`💥 Erro: ${result.delivery_result.error}`);
+                    }
+                    alert('❌ Erro ao enviar mensagem');
+                }
+                
+                addLog(`🆔 ID da mensagem: ${result.message_id.substring(0,8)}`);
             } else {
+                addLog('❌ Erro na requisição');
+                addLog(`💥 ${result.error}`);
                 alert('Erro ao enviar mensagem: ' + result.error);
             }
 
@@ -142,52 +185,17 @@
                 div.innerHTML = `
                     <strong>ID:</strong> ${message.id}<br>
                     <strong>Status:</strong> ${message.status}<br>
-                    <strong>Destino:</strong> ${message.path.slice(-1)[0]}<br>
-                    <strong>Prioridade:</strong> ${message.priority}<br>
-                    <strong>Tentativas:</strong> ${message.attempts}<br>
-                    <strong>Entregue:</strong> ${message.delivery_confirmed ? 'Sim' : 'Não'}<br>
-                    <strong>Clones:</strong> ${message.clone_count}
+                    <strong>Destino:</strong> ${message.destination}<br>
+                    <strong>IA Nível:</strong> ${message.ai_level}<br>
+                    <strong>Conteúdo:</strong> ${message.content.substring(0, 50)}...<br>
+                    <strong>Criado em:</strong> ${new Date(message.created_at).toLocaleString()}
                 `;
                 container.appendChild(div);
             });
         }
 
         // Atualiza lista periodicamente
-        setInterval(updateActiveMessages, 3000);
-
-        // Função para adicionar log
-        function addLog(message) {
-            const logContainer = document.getElementById('messageLogs');
-            const timestamp = new Date().toLocaleTimeString();
-            logContainer.textContent += `[${timestamp}] ${message}\n`;
-            logContainer.scrollTop = logContainer.scrollHeight;
-        }
-
-        // WebSocket para atualizações em tempo real
-        socket.on('message_update', data => {
-            console.log('Atualização de mensagem:', data);
-            addLog(`🔄 Mensagem ${data.message_id ? data.message_id.substring(0,8) : 'desconhecida'} atualizada`);
-            updateActiveMessages();
-        });
-
-        socket.on('message_delivered', data => {
-            console.log('Mensagem entregue:', data);
-            addLog(`✅ Mensagem ${data.message_id ? data.message_id.substring(0,8) : 'desconhecida'} entregue com sucesso!`);
-            updateActiveMessages();
-        });
-
-        // Escuta eventos de evolução da mensagem
-        socket.on('message_evolution', data => {
-            addLog(`🧠 ${data.action}: ${data.details}`);
-        });
-
-        socket.on('message_clone', data => {
-            addLog(`🔀 Clone criado da mensagem ${data.original_id.substring(0,8)} -> Clone #${data.clone_number}`);
-        });
-
-        socket.on('message_route_attempt', data => {
-            addLog(`📡 Tentativa de rota via ${data.network_type} para ${data.next_hop} - ${data.success ? 'Sucesso' : 'Falha'}`);
-        });
+        setInterval(updateActiveMessages, 5000);
 
         // Atualiza ao carregar a página
         updateActiveMessages();

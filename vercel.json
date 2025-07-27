@@ -2,23 +2,14 @@
   "version": 2,
   "builds": [
     {
-      "src": "integrated_server.py",
+      "src": "vercel_server.py",
       "use": "@vercel/python"
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "integrated_server.py"
+      "dest": "vercel_server.py"
     }
-  ],
-  "env": {
-    "PYTHONPATH": ".",
-    "GEMINI_API_KEY": "@gemini_api_key"
-  },
-  "functions": {
-    "integrated_server.py": {
-      "maxDuration": 30
-    }
-  }
+  ]
 }
