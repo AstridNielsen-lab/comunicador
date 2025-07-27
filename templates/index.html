@@ -87,6 +87,9 @@
             <button type="submit">Enviar</button>
         </form>
 
+        <h2>Logs de Evolução da Mensagem</h2>
+        <pre id="messageLogs" style="background: #f8f9fa; border: 1px solid #ccc; padding: 10px; border-radius: 4px; max-height: 300px; overflow-y: scroll; font-size: 12px;"></pre>
+
         <h2>Mensagens Ativas</h2>
         <div id="activeMessages"></div>
     </div>
@@ -147,15 +150,38 @@
         // Atualiza lista periodicamente
         setInterval(updateActiveMessages, 3000);
 
+        // Função para adicionar log
+        function addLog(message) {
+            const logContainer = document.getElementById('messageLogs');
+            const timestamp = new Date().toLocaleTimeString();
+            logContainer.textContent += `[${timestamp}] ${message}\n`;
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
         // WebSocket para atualizações em tempo real
         socket.on('message_update', data => {
             console.log('Atualização de mensagem:', data);
+            addLog(`🔄 Mensagem ${data.message_id ? data.message_id.substring(0,8) : 'desconhecida'} atualizada`);
             updateActiveMessages();
         });
 
         socket.on('message_delivered', data => {
             console.log('Mensagem entregue:', data);
+            addLog(`✅ Mensagem ${data.message_id ? data.message_id.substring(0,8) : 'desconhecida'} entregue com sucesso!`);
             updateActiveMessages();
+        });
+
+        // Escuta eventos de evolução da mensagem
+        socket.on('message_evolution', data => {
+            addLog(`🧠 ${data.action}: ${data.details}`);
+        });
+
+        socket.on('message_clone', data => {
+            addLog(`🔀 Clone criado da mensagem ${data.original_id.substring(0,8)} -> Clone #${data.clone_number}`);
+        });
+
+        socket.on('message_route_attempt', data => {
+            addLog(`📡 Tentativa de rota via ${data.network_type} para ${data.next_hop} - ${data.success ? 'Sucesso' : 'Falha'}`);
         });
 
         // Atualiza ao carregar a página
