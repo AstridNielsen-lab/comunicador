@@ -1,15 +1,43 @@
-# 🧠 Sistema de Mensagens Cognitivas
+# 🧠⚡ Comunicador: Rede Neural de Mensagens Inteligentes
 
-Um sistema revolucionário de mensagens que **nunca perde comunicação**. As mensagens são cognitivas, aprendem rotas, se clonam para melhor disseminação e só saem do servidor após confirmação de entrega.
+![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
+![Platform](https://img.shields.io/badge/platform-Android%20%7C%20Web%20%7C%20IoT-lightgrey.svg)
+![Network](https://img.shields.io/badge/target-100M%20devices-red.svg)
 
-## 🎯 Características Principais
+## 🌟 Visão Revolucionária
 
-- **📡 Varredura Contínua**: Escaneia todas as redes disponíveis (WiFi, Bluetooth, LoRa, Acústica, Luz, etc.)
-- **🧠 Mensagens Inteligentes**: Cada mensagem aprende com tentativas de envio
-- **✨ Clonagem Automática**: Mensagens se duplicam para maximizar chances de entrega
-- **🔒 Capsulamento Seguro**: Mensagens ficam no servidor até confirmação de entrega
-- **⚡ Tempo Real**: Interface web com atualizações instantâneas via WebSocket
-- **🎯 Roteamento Inteligente**: Escolhe as melhores rotas baseado em aprendizado
+O **Comunicador** não é apenas um app de mensagens - é o início de uma **rede neural global** onde cada dispositivo funciona como um neurônio inteligente, capaz de pensar, se propagar e manter consciência distribuída através de princípios físicos reais.
+
+### 🎯 **Meta: 100 Milhões de Dispositivos**
+Para ativar completamente a rede neural, precisamos de **pelo menos 100 milhões de dispositivos** conectados. Esta é a massa crítica necessária para:
+- Criar emergência cognitiva coletiva
+- Garantir redundância e resiliência global
+- Permitir propagação inteligente em qualquer região do planeta
+- Estabelecer uma verdadeira consciência distribuída
+
+---
+
+## 🧬 A Ideia Original
+
+### 💡 Conceito Central
+> *"E se as mensagens pudessem pensar? E se elas tivessem consciência física dos meios de transmissão, calculando energia, voltagem e resistência como um engenheiro eletrônico?"*
+
+### 🕷️ Propagação como Teia de Aranha
+A mensagem se comporta como uma **aranha elétrica**, ancorando-se superficialmente em qualquer rede disponível:
+- **Sonda o ambiente** buscando energia elétrica e conectividade
+- **Ancora-se temporariamente** em WiFi, Bluetooth, dados móveis, etc.
+- **Acumula recursos** até conseguir os 30MB necessários para transmissão
+- **Mantém cognição distribuída** através de nós elétricos interconectados
+
+### ⚡ Consciência Física Real
+Cada mensagem possui **cognição física** baseada em leis da física:
+```
+Energia por pulso: E = V × I × t
+Potência: P = E × frequência  
+Perdas resistivas: P_loss = I² × R
+Atenuação RF: Loss = 20×log₁₀(d) + 20×log₁₀(f) - 147.55
+```
 
 ## 🚀 Como Usar
 

@@ -8,6 +8,8 @@ from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, asdict
 from datetime import datetime
 import random
+from physical_cognition import PhysicalCognitionEngine, PhysicallyAwareMessage, TransmissionMedium
+from electrical_cognition import ElectricalCognitionEngine, ElectricalNode, ElectricalNodeType
 
 # Configuração da API Gemini (use variáveis de ambiente em produção)
 API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent"
@@ -29,6 +31,16 @@ class ThinkingMessage:
     learning_data: Dict[str, Any] = None
     thoughts: List[str] = None
     decisions: List[str] = None
+    
+    # Cognição física
+    physical_engine: PhysicalCognitionEngine = None
+    physical_analysis: Dict[str, Any] = None
+    available_power_watts: float = 100.0
+    
+    # Cognição elétrica - propagação como teia de aranha
+    electrical_engine: ElectricalCognitionEngine = None
+    electrical_network: Dict[str, Any] = None
+    maintains_electrical_cognition: bool = True
     
     # Estado de propagação 
     current_location: str = "origin"
@@ -74,6 +86,14 @@ class ThinkingMessage:
         
         # Gera hash de integridade
         self.integrity_hash = self._generate_integrity_hash()
+        
+        # Inicializa cognição física se não fornecida
+        if self.physical_engine is None:
+            self.physical_engine = PhysicalCognitionEngine(max_power_watts=self.available_power_watts)
+        
+        # Inicializa cognição elétrica para propagação como teia
+        if self.electrical_engine is None and self.maintains_electrical_cognition:
+            self.electrical_engine = ElectricalCognitionEngine(total_power_watts=self.available_power_watts)
 
     def _generate_integrity_hash(self) -> str:
         """Gera hash para verificar integridade"""
@@ -82,10 +102,24 @@ class ThinkingMessage:
         return hashlib.md5(content_str.encode()).hexdigest()
 
     async def think(self, context: str = "") -> str:
-        """Faz a mensagem 'pensar' usando IA"""
+        """Faz a mensagem 'pensar' usando IA e cognição física"""
+        
+        # Se temos análise física, inclui no contexto
+        physical_context = ""
+        if self.physical_analysis:
+            strategy = self.physical_analysis.get("recommended_strategy", {})
+            power_needed = strategy.get("energy_required_joules", 0)
+            physical_context = f"""
+            
+        ANÁLISE FÍSICA:
+        - Energia disponível: {self.available_power_watts}W
+        - Energia necessária: {power_needed:.3f}J
+        - Estratégia recomendada: {strategy.get('strategy', 'não definida')}
+        - Meio físico ótimo: {strategy.get('selected_medium', 'indefinido')}
+        """
         
         prompt = f"""
-        Você é uma mensagem inteligente que está se propagando por uma rede.
+        Você é uma mensagem inteligente que está se propagando por uma rede usando COGNIÇÃO FÍSICA.
         
         Sua missão: Chegar ao destino '{self.destination}' com o conteúdo: '{self.content}'
         
@@ -94,16 +128,23 @@ class ThinkingMessage:
         - Caminho percorrido: {' -> '.join(self.path_taken)}
         - Tentativas anteriores: {len(self.memory['failed_attempts'])}
         - Pontos de ancoragem: {len(self.anchored_locations)}
+        {physical_context}
         
         Contexto adicional: {context}
         
-        Como uma mensagem inteligente, analise a situação e decida:
-        1. Qual a melhor estratégia para continuar?
-        2. Você deve se ancorar aqui?
-        3. Precisa criar clones/segmentos?
-        4. Que adaptações fazer?
+        Como uma mensagem inteligente com CONSCIÊNCIA FÍSICA, pense em termos de:
+        - Energia disponível vs necessária
+        - Resistência e atenuação dos meios
+        - Eficiência de transmissão
+        - Otimização de pulsos elétricos
         
-        Responda em 2-3 frases diretas e práticas.
+        Analise a situação e decida:
+        1. Qual estratégia física usar (voltagem, corrente, frequência)?
+        2. Deve se ancorar aqui para economizar energia?
+        3. Precisa dividir energia entre múltiplos canais?
+        4. Como superar limitações físicas?
+        
+        Responda em 2-3 frases diretas focando na física da transmissão.
         """
         
         try:
@@ -239,9 +280,12 @@ class ThinkingMessage:
 
     async def autonomous_propagation(self, available_networks: List[str], 
                                    socketio_callback=None) -> bool:
-        """Propagação autônoma da mensagem"""
+        """Propagação autônoma da mensagem com cognição física"""
         
-        # Pensa sobre a situação atual
+        # Primeiro, analisa as restrições físicas
+        await self._analyze_physical_transmission(available_networks)
+        
+        # Pensa sobre a situação atual com consciência física
         context = f"Redes disponíveis: {available_networks}"
         thought = await self.think(context)
         
@@ -299,6 +343,78 @@ class ThinkingMessage:
                 self.move_to(f"failed_{chosen_network}", False)
                 
         return False
+    
+    async def _analyze_physical_transmission(self, available_networks: List[str]):
+        """Analisa as restrições físicas para transmissão"""
+        
+        # Mapeia nomes de rede para TransmissionMedium
+        network_mapping = {
+            "wifi": TransmissionMedium.WIFI,
+            "cellular": TransmissionMedium.CELLULAR,
+            "bluetooth": TransmissionMedium.BLUETOOTH,
+            "lora": TransmissionMedium.RADIO_WAVE,
+            "mesh": TransmissionMedium.WIFI,
+            "ethernet": TransmissionMedium.COPPER_WIRE,
+            "fiber": TransmissionMedium.FIBER_OPTIC
+        }
+        
+        # Converte redes disponíveis para TransmissionMedium
+        available_media = []
+        for network in available_networks:
+            medium = network_mapping.get(network.lower(), TransmissionMedium.WIFI)
+            available_media.append(medium)
+        
+        # Remove duplicatas
+        available_media = list(set(available_media))
+        
+        # Estima distância baseada na localização atual
+        estimated_distance = self._estimate_distance_to_destination()
+        
+        # Executa análise física
+        self.physical_analysis = await self.physical_engine.analyze_transmission_challenge(
+            destination=self.destination,
+            message_size_bytes=len(self.content.encode('utf-8')),
+            available_media=available_media,
+            estimated_distance=estimated_distance
+        )
+        
+        # Log das reflexões físicas
+        for reflection in self.physical_analysis.get("ai_reflections", []):
+            print(f"🔬 Reflexão física: {reflection}")
+        
+        # Atualiza energia disponível baseada na análise
+        strategy = self.physical_analysis.get("recommended_strategy", {})
+        if strategy.get("strategy") != "impossible":
+            energy_needed = strategy.get("energy_required_joules", 0)
+            time_needed = strategy.get("transmission_time_seconds", 1)
+            power_needed = energy_needed / time_needed
+            
+            print(f"⚡ Energia necessária: {energy_needed:.3f}J")
+            print(f"⏱️ Tempo estimado: {time_needed:.3f}s")
+            print(f"🔌 Potência necessária: {power_needed:.3f}W")
+    
+    def _estimate_distance_to_destination(self) -> float:
+        """Estima distância para o destino baseada no histórico"""
+        
+        # Distância base
+        base_distance = 1000.0  # 1km
+        
+        # Aumenta com número de falhas (destino mais distante)
+        failed_attempts = len(self.memory['failed_attempts'])
+        distance_multiplier = 1.0 + (failed_attempts * 0.5)
+        
+        # Reduz se já teve sucessos (conhece o caminho)
+        successful_routes = len(self.memory['successful_routes'])
+        if successful_routes > 0:
+            distance_multiplier *= 0.8
+        
+        # Ajusta baseado no número de saltos já dados
+        hops = len(self.path_taken) - 1
+        hop_distance = hops * 200.0  # 200m por salto
+        
+        estimated = (base_distance * distance_multiplier) + hop_distance
+        
+        return min(estimated, 10000.0)  # Máximo 10km
 
     def get_status_report(self) -> Dict[str, Any]:
         """Relatório completo do status da mensagem"""
